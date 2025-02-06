@@ -3,12 +3,15 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
+from src.bot.keyboards.bot_game_keyboard import bot_game_keyboard
 from src.bot.keyboards.register_keyboard import register_keyboard
-from src.bot.values.states.commands_states import RegisterState
+from src.bot.values.states.commands_states import RegisterState, DigitGameState
 from src.config import logging_settings
 from src.container import configure_logging
 
 from logging import getLogger
+import random
+
 
 logger = getLogger(__file__)
 configure_logging(level=logging_settings.LOGGING_LEVEL)
@@ -17,13 +20,27 @@ router = Router(name=__name__)
 
 
 @router.message(CommandStart())
-async def start_handler(message: Message):
+async def start_command_handler(message: Message):
     await message.answer("Напиши: игра")
 
 
-@router.message(Command("start", "help", prefix="/"))
-async def start_and_help_commands_handler(message: Message):
+@router.message(Command("help", prefix="/"))
+async def help_command_handler(message: Message):
     await message.reply(text="Howdy, how are you doing?")
+
+
+@router.message(Command("game", prefix="/"))
+async def game_command_handler(message: Message, state: FSMContext):
+
+    await message.answer(
+        f'Давай сыграем в игру "угадай число"!\nТы загадываешь число, а я должен его угадать. У меня есть ограниченное кол-во попыток: 5'
+    )
+
+    attempt = 5
+    await state.set_data({"attempt": attempt})
+    await message.answer(
+        f"У тебя число {random.randint(1, 10)}?", reply_markup=bot_game_keyboard()
+    )
 
 
 @router.message(Command("reg", prefix="/"))

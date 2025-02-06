@@ -9,4 +9,5 @@ class RegisterState(StatesGroup):
 
 
 class DigitGameState(StatesGroup):
-    start_game = State()
+    my_game = State()
+    bot_game = State()

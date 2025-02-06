@@ -23,10 +23,10 @@ async def digit_game_start_handler(message: Message, state: FSMContext):
     await message.answer("Готово! Загадано число от 1 до 10!")
     await message.answer("Введите число")
 
-    await state.set_state(DigitGameState.start_game)
+    await state.set_state(DigitGameState.my_game)
 
 
-@router.message(DigitGameState.start_game, F.text)
+@router.message(DigitGameState.my_game, F.text)
 async def digit_game_handler(message: Message, state: FSMContext):
     user_digit = message.text
 
