@@ -11,6 +11,7 @@ from src.container import configure_logging
 
 from logging import getLogger
 import random
+import time
 
 from src.utils import generate_password
 
@@ -23,8 +24,34 @@ router = Router(name=__name__)
 @router.message(CommandStart())
 async def start_command_handler(message: Message):
     await message.answer(
-        text="Привет! Я могу сгенерировать для тебя сложный пароль. Просто отправь мне команду /generate_password и укажи желаемую длину пароля."
+        text="Привет! Я бот для напоминаний. Используй /remind [время] [текст] для установки таймера."
     )
+
+
+@router.message(Command("remind", prefix="/"))
+async def remind_command_handler(message: Message):
+    words = message.text.split()
+
+    if len(words) < 3:
+        await message.answer(
+            text="Пожалуйста, укажи желаемое время и текст для установки паузы после команды /remind. Например, /remind 10 Привет, мир!"
+        )
+        return None
+
+    try:
+        remind_time = float(words[1])
+    except ValueError:
+        await message.answer(
+            text="Пожалуйста, укажи желаемое время для команды /generate_password в виде ЧИСЛА, и не забудьте про текст для установки паузы. Например, /remind 1234 Ветер северный"
+        )
+        return None
+
+    remind_text = "".join(words[2:])
+    await message.answer(
+        text=f"Ок, Я напомню тебе через {remind_time} с  {remind_text}."
+    )
+    time.sleep(remind_time)
+    await message.answer(text=f"Хэй, не забудь {remind_text}!")
 
 
 @router.message(Command("generate_password", prefix="/"))
@@ -36,7 +63,6 @@ async def generate_password_command_handler(message: Message):
             text="Пожалуйста, укажи желаемую длину пароля после команды /generate_password. Например, /generate_password 12"
         )
         return None
-
     try:
         length = int(words[1])
     except ValueError:
