@@ -5,7 +5,7 @@ from aiogram.types import Message
 
 from src.bot.keyboards.bot_game_keyboard import bot_game_keyboard
 from src.bot.keyboards.register_keyboard import register_keyboard
-from src.bot.values.states.commands_states import RegisterState, DigitGameState
+from src.bot.values.states.commands_states import RegisterState
 from src.config import logging_settings
 from src.container import configure_logging
 
@@ -21,12 +21,54 @@ router = Router(name=__name__)
 
 @router.message(CommandStart())
 async def start_command_handler(message: Message):
-    await message.answer("Напиши: игра")
+    await message.answer(
+        "Привет! Этот бот может конвертировать различные величины. Для получения списка доступных величин введите команду /help"
+    )
 
 
 @router.message(Command("help", prefix="/"))
 async def help_command_handler(message: Message):
-    await message.reply(text="Howdy, how are you doing?")
+    await message.reply(
+        text="Используйте команду /convert [значение] [величина] [величина] для конвертации. Доступные величины: км, м, ми, яр, фут, кг, г, фнт, унц"
+    )
+
+
+@router.message(Command("convert", prefix="/"))
+async def convert_command_handler(message: Message):
+    args = message.text.split()[1:]
+    if len(args) != 3:
+        await message.reply(
+            text="Неверное количество аргументов. Используйте команду следующим образом: /convert [значение] [величина] [величина]"
+        )
+        return None
+    try:
+        value = float(args[0])
+    except ValueError:
+        await message.reply(text="Неверное значение. Пожалуйста, введите число")
+        return None
+
+    unit_from = args[1]
+    unit_to = args[2]
+    ratios = {
+        "км": 1,
+        "м": 1000,
+        "ми": 0.621371,
+        "яр": 1093.61,
+        "фут": 3280.84 / 1000,
+        "кг": 1,
+        "г": 1000,
+        "фнт": 2.20462,
+        "унц": 35.274,
+    }
+
+    if unit_from not in ratios or unit_to not in ratios:
+        await message.reply(
+            text="Неверная величина. Для получения списка доступных величин введите команду /help"
+        )
+
+    result = value * ratios[unit_to] / ratios[unit_from]
+
+    await message.answer(text=f"{value} {unit_from} = {result:.2f} {unit_to}")
 
 
 @router.message(Command("game", prefix="/"))

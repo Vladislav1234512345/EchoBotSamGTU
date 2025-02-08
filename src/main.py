@@ -12,7 +12,7 @@ from fastapi import FastAPI, Request
 
 from src.container import configure_logging
 from src.config import bot_settings, web_settings, logging_settings
-from src.v1 import router as v1_router
+from src.server.v1 import router as v1_router
 from src import dp
 import sys
 import os
