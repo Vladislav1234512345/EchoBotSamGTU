@@ -12,6 +12,7 @@ from src.container import configure_logging
 from logging import getLogger
 import random
 
+from src.utils import generate_password
 
 logger = getLogger(__file__)
 configure_logging(level=logging_settings.LOGGING_LEVEL)
@@ -22,8 +23,31 @@ router = Router(name=__name__)
 @router.message(CommandStart())
 async def start_command_handler(message: Message):
     await message.answer(
-        "Привет! Этот бот может конвертировать различные величины. Для получения списка доступных величин введите команду /help"
+        text="Привет! Я могу сгенерировать для тебя сложный пароль. Просто отправь мне команду /generate_password и укажи желаемую длину пароля."
     )
+
+
+@router.message(Command("generate_password", prefix="/"))
+async def generate_password_command_handler(message: Message):
+    words = message.text.split()
+
+    if len(words) != 2:
+        await message.reply(
+            text="Пожалуйста, укажи желаемую длину пароля после команды /generate_password. Например, /generate_password 12"
+        )
+        return None
+
+    try:
+        length = int(words[1])
+    except ValueError:
+        await message.reply(
+            text="Пожалуйста, укажи желаемую длину пароля после команды /generate_password в виде ЦЕЛОГО ЧИСЛА. Например, /generate_password 12"
+        )
+        return None
+
+    password = generate_password(length=length)
+
+    await message.answer(text=f"Вот твой новый пароль: {password}")
 
 
 @router.message(Command("help", prefix="/"))
