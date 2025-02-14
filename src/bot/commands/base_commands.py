@@ -15,6 +15,8 @@ import time
 import datetime
 from cbrf.models import DailyCurrenciesRates
 
+from src.container import memes, jokes
+
 from src.utils import generate_password
 
 logger = getLogger(__file__)
@@ -22,7 +24,48 @@ configure_logging(level=logging_settings.LOGGING_LEVEL)
 
 router = Router(name=__name__)
 
-command_list = "Полный список команд:\n" "/AUD \n" "/USD \n " "/EUR \n " "/converter \n"
+command_list = (
+    "Напиши мне команду\n"
+    "/send_meme - отправить мем\n"
+    "/send_joke - отправить анекдот\n"
+)
+
+memes_sent_count = 0
+jokes_sent_count = 0
+
+
+@router.message(CommandStart())
+async def start_command_handler(message: Message):
+    await message.answer(
+        text="Привет, это бот создан в качестве примера получения картинки и анекдотов!\n"
+        + command_list
+    )
+
+
+@router.message(Command("send_meme", prefix="/"))
+async def send_meme_command_handler(message: Message):
+    global memes_sent_count
+    memes_sent_count += 1
+    await message.answer_photo(photo=random.choice(memes))
+
+
+@router.message(Command("send_joke", prefix="/"))
+async def send_joke_command_handler(message: Message):
+    global jokes_sent_count
+    jokes_sent_count += 1
+    await message.answer(text=random.choice(jokes))
+
+
+@router.message(Command("stats", prefix="/"))
+async def stats_memes_and_jokes_handler(message: Message):
+    global memes_sent_count, jokes_sent_count
+    await message.answer(
+        text=f"Количество отправленных мемов = {memes_sent_count}"
+        f"\nКоличество отправленных шуток = {jokes_sent_count}"
+    )
+
+
+# command_list = "Полный список команд:\n" "/AUD \n" "/USD \n " "/EUR \n " "/converter \n"
 
 convert_list = "Полный перечень валют:\nUSD,\nAUD,\nEUR,\nRUB"
 today = datetime.date.today()
@@ -30,15 +73,7 @@ daily = DailyCurrenciesRates()
 # daily.date
 datetime.datetime(today.year, today.month, today.day, 0, 0)
 
-
 CURRENCIES = {"EUR": "R01239", "USD": "R01235", "AUD": "R01010", "RUB": None}
-
-
-@router.message(CommandStart())
-async def start_command_handler(message: Message):
-    await message.answer(
-        text=f"Привет, это бот создан для получения валют!\n" + command_list
-    )
 
 
 @router.message(Command("AUD", prefix="/"))

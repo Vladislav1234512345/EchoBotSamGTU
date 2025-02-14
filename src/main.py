@@ -52,4 +52,5 @@ async def webhook(request: Request) -> None:
 
 
 if __name__ == "__main__":
+
     uvicorn.run(app=app, host=web_settings.WEB_HOST, port=web_settings.WEB_PORT)
