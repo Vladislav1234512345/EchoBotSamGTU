@@ -8,6 +8,10 @@ class RegisterState(StatesGroup):
     check = State()
 
 
+class ConverterState(StatesGroup):
+    how_much_convert_state = State()
+
+
 class DigitGameState(StatesGroup):
     my_game = State()
     bot_game = State()

@@ -5,13 +5,15 @@ from aiogram.types import Message
 
 from src.bot.keyboards.bot_game_keyboard import bot_game_keyboard
 from src.bot.keyboards.register_keyboard import register_keyboard
-from src.bot.values.states.commands_states import RegisterState
+from src.bot.values.states.commands_states import RegisterState, ConverterState
 from src.config import logging_settings
 from src.container import configure_logging
 
 from logging import getLogger
 import random
 import time
+import datetime
+from cbrf.models import DailyCurrenciesRates
 
 from src.utils import generate_password
 
@@ -20,12 +22,112 @@ configure_logging(level=logging_settings.LOGGING_LEVEL)
 
 router = Router(name=__name__)
 
+command_list = "Полный список команд:\n" "/AUD \n" "/USD \n " "/EUR \n " "/converter \n"
+
+convert_list = "Полный перечень валют:\nUSD,\nAUD,\nEUR,\nRUB"
+today = datetime.date.today()
+daily = DailyCurrenciesRates()
+# daily.date
+datetime.datetime(today.year, today.month, today.day, 0, 0)
+
+
+CURRENCIES = {"EUR": "R01239", "USD": "R01235", "AUD": "R01010", "RUB": None}
+
 
 @router.message(CommandStart())
 async def start_command_handler(message: Message):
     await message.answer(
-        text="Привет! Я бот для напоминаний. Используй /remind [время] [текст] для установки таймера."
+        text=f"Привет, это бот создан для получения валют!\n" + command_list
     )
+
+
+@router.message(Command("AUD", prefix="/"))
+async def get_aud_handler(message: Message):
+    aud_object = daily.get_by_id(CURRENCIES[message.text[1:]])
+    names = aud_object.name
+    value = aud_object.value
+    await message.answer(text=" " + names + " " + str(value))
+
+
+@router.message(Command("USD", prefix="/"))
+async def get_usd_handler(message: Message):
+    usd_object = daily.get_by_id(CURRENCIES[message.text[1:]])
+    names = usd_object.name
+    value = usd_object.value
+    await message.answer(text=" " + names + " " + str(value))
+
+
+@router.message(Command("EUR", prefix="/"))
+async def get_euro_handler(message: Message):
+    euro_object = daily.get_by_id(CURRENCIES[message.text[1:]])
+    names = euro_object.name
+    value = euro_object.value
+    await message.answer(text=" " + names + " " + str(value))
+
+
+@router.message(Command("converter", prefix="/"))
+async def convert_currencies_command_handler(message: Message, state: FSMContext):
+    await message.answer(
+        text="Введите сообщение вида: [Число] [Валюта1] [Валюта2], где\n"
+        "\nЧисло - количество денег для конвертами,"
+        "\nВалюта1 - валюта из какой конвертировать,"
+        "\nВалюта2 - валюта в какую конвертировать.\n\n" + convert_list
+    )
+    await state.set_state(ConverterState.how_much_convert_state)
+
+
+@router.message(ConverterState.how_much_convert_state, F.text)
+async def convert_currencies_handler(message: Message, state: FSMContext):
+    words = message.text.split()
+    if len(words) != 3:
+        await message.reply(text="Введите сообщение вида: [Число] [Валюта1] [Валюта2]")
+        return None
+
+    try:
+        amount = float(words[0])
+    except ValueError:
+        await message.reply(
+            text="Введите ЧИСЛО денег в рублях, которые вы хотите конвертировать."
+        )
+        return None
+
+    from_currency = words[1]
+    to_currency = words[2]
+    if from_currency == to_currency:
+        await message.reply(text="Валюта 1 и валюта 2 не должны быть одинаковыми.")
+        return None
+    if from_currency in CURRENCIES.keys() and to_currency in CURRENCIES.keys():
+        if from_currency == "RUB":
+            to_currency_value = float(daily.get_by_id(CURRENCIES[to_currency]).value)
+            answer_count = round(amount / to_currency_value, 2)
+        elif to_currency == "RUB":
+            from_currency_value = float(
+                daily.get_by_id(CURRENCIES[from_currency]).value
+            )
+            answer_count = round(amount * from_currency_value, 2)
+        else:
+            from_currency_value = float(
+                daily.get_by_id(CURRENCIES[from_currency]).value
+            )
+            to_currency_value = float(daily.get_by_id(CURRENCIES[to_currency]).value)
+            answer_count = round(amount * from_currency_value / to_currency_value, 2)
+        await message.answer(
+            text=f"После конвертации денег из одной валюты в другую, мы получили число, которое равно {answer_count}"
+        )
+        await state.clear()
+    else:
+        if from_currency not in CURRENCIES.keys():
+            await message.reply(
+                text="Валюта которую необходимо конвертировать была введена неверна\n"
+                + convert_list
+            )
+        else:
+            await message.reply(
+                text="Валюта в которую необходимо конвертировать была введена неверна\n"
+                + convert_list
+            )
+
+    await state.set_data({"amount": amount})
 
 
 @router.message(Command("remind", prefix="/"))
